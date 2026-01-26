@@ -21,13 +21,18 @@ class SPL_Meter_Manager:
     frame_counter=0
     max_frame_count = 0
 
-    def __init__(self, sound_config) -> None:
+    def __init__(self, sound_config, sd_config) -> None:
         #ładowanie ustawień
         self.reference_level = float(sound_config.get("calibration_level", 94))
         self.calibration = float(sound_config.get("calibration_correction_value", 0))
         self.sensitivity = float(sound_config.get("sensitivity_dbfs", -26))
         self.sampling_rate = int(sound_config.get("sample_rate", 48000))
         self.timeweighting = float(sound_config.get("timeweighting", 0.125)) #domyślnie stała czasowa fast
+
+        self.sddevicenum=int(sd_config.get("device", 1))
+        self.sdchannel = int(sd_config.get("channels", 1))
+
+
 
         #zerowanie wyników
         self.max_frame_count = int(60*15*1/self.timeweighting) # zakladam max czas usredniania jako 15 minut
@@ -65,7 +70,7 @@ class SPL_Meter_Manager:
 
     def measure_SPL(self, spl_queue, do_reset_queue):
         CHANNEL = 1 #To NIE zmienia się w naszej konfiguracji. Jeśli zmienił się model mikrofonu i nie działa, to tutaj można szukać winnego
-        with sd.InputStream(device=0, channels=CHANNEL, callback=self.callback,
+        with sd.InputStream(device=self.sddevicenum, channels=self.sdchannel, callback=self.callback,
                         blocksize=int(self.sampling_rate * self.timeweighting),
                         samplerate=self.sampling_rate):
             while True:
@@ -90,6 +95,10 @@ class SPL_Meter_Manager:
                 }
                 spl_queue.put(out_dict)
                 # print(out_dict)
-# print(sd.query_devices())
-# spl_met = SPL_Meter_Manager({})
-# spl_met.measure_SPL(Queue(), Queue())
+
+
+
+if __name__=="__main__":
+    print(sd.query_devices())
+    spl_met = SPL_Meter_Manager({})
+    spl_met.measure_SPL(Queue(), Queue())
