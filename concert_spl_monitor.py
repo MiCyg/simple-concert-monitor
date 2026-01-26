@@ -3,11 +3,19 @@ from guizero import App, PushButton, Text, Box
 import threading
 import math
 from queue import Queue, Empty
+from spl_log import SPLLogger, Logger
 
+
+meas_logger = SPLLogger(directory="measurements", prefix="spl")
+debug = Logger(directory="debug", prefix="log")
+
+debug.log("Starting concert SPL monitor application")
 spl_queue = Queue(5)
 do_reset_queue = Queue(1)
-measurement_manager = SPL_Meter_Manager({})
+# TODO dodać wczytywanie ustawień z plików json
+measurement_manager = SPL_Meter_Manager({}, {})
 
+debug.log("Start measurement thread")
 meas_thread = threading.Thread(target=measurement_manager.measure_SPL, args=(spl_queue,do_reset_queue,), daemon=True)
 meas_thread.start()
 
@@ -65,7 +73,8 @@ def get_data(queue):
         if math.isnan(value): value=0
         if weigh=="a" and (time=="fifteen_mins" or time=="minute") and value>=100: text.text_color=danger_color
         if value<100: text.text_color=color_active
-        if value != 0: text.value=f"{value:.1f}"        
+        if value != 0: text.value=f"{value:.1f}"     
+        meas_logger.saveMeas(value)   
         queue.task_done()
 
 app = App(title="Concert audio monitor", bg="#000000",  )
@@ -115,5 +124,6 @@ a_button.text_size=20
 lin_button.text_color="#ffffff"
 lin_button.text_size=20
 
+debug.log("Set up complete, displaying app")
 app.set_full_screen()
 app.display()
