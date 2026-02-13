@@ -8,49 +8,66 @@ import os
 from scipy.signal import lfilter
 
 class SPL_Meter_Manager:
-    """This is the class responsible for recording sound levels and passing them to a queue.
+    """
+    This is the class responsible for recording sound levels and passing them to a queue.
     """ 
-    l_dbs = []
-    a_dbs = []
-    reference_level = 94
-    calibration = 0
-    sampling_rate = 48000
-    sensitivity = -26
-    timeweighting = 0.125
 
-    frame_counter=0
-    max_frame_count = 0
+    REFERENCE_LEVEL_NAME = "calibration_level"
+    CALIBRATION_LEVEL_NAME = "calibration_correction_value"
+    SENSITIVITY_NAME = "sensitivity_dbfs"
+    SAMPLE_RATE_NAME = "sample_rate"
+    TIMEWEIGHTING_NAME = "timeweighting"
 
-    def __init__(self, sound_config, sd_config) -> None:
+    DEVICE_NUM_NAME = "device"
+    CHANNELS_NUM_NAME = "channels"
+
+    def __init__(self, meas_config:dict=None, sd_config:dict=None) -> None:
         #ładowanie ustawień
-        self.reference_level = float(sound_config.get("calibration_level", 94))
-        self.calibration = float(sound_config.get("calibration_correction_value", 0))
-        self.sensitivity = float(sound_config.get("sensitivity_dbfs", -26))
-        self.sampling_rate = int(sound_config.get("sample_rate", 48000))
-        self.timeweighting = float(sound_config.get("timeweighting", 0.125)) #domyślnie stała czasowa fast
-
-        self.sddevicenum=int(sd_config.get("device", 1))
-        self.sdchannel = int(sd_config.get("channels", 1))
-
-
+        self.meas_config = meas_config
+        self.sd_config = sd_config
 
         #zerowanie wyników
-        self.max_frame_count = int(60*15*1/self.timeweighting) # zakladam max czas usredniania jako 15 minut
+        self.max_frame_count = int(60*15*1/self.meas_config[self.TIMEWEIGHTING_NAME]) # zakladam max czas usredniania jako 15 minut
         self.l_dbs = []
         self.a_dbs = []
+        self.update_config = False
+
+        print("configs:")
+        print("sd:")
+        print(self.sd_config)
+        print("meas:")
+        print(self.meas_config)
+    
+    def set_meas_config(self, meas_config:dict):
+        self.meas_config = meas_config
+        self.update_config = True
+
+    def get_meas_config(self) -> dict:
+        return self.meas_config
+
+    def update_sounddevice_config(self, sd_config):
+        self.sd_config = sd_config
+        self.update_config = True
+        
 
     def callback(self, indata, frames, time, status):
         if any(indata):
-            max_lvl = self.reference_level - self.sensitivity
+            reference_level = self.meas_config[self.REFERENCE_LEVEL_NAME]
+            calibration = self.meas_config[self.CALIBRATION_LEVEL_NAME]
+            sensitivity = self.meas_config[self.SENSITIVITY_NAME]
+            sampling_rate = self.meas_config[self.SAMPLE_RATE_NAME]
+            
+
+            max_lvl = reference_level - sensitivity
 
             data_input=indata[:,0]
             l_data = data_input - np.mean(data_input)
 
-            b, a = A_weighting(self.sampling_rate)
+            b, a = A_weighting(sampling_rate)
             a_data = lfilter(b, a, l_data)
 
-            l_db = max_lvl + 20*np.log10(np.mean(np.sqrt(l_data**2))) + self.calibration
-            a_db = max_lvl + 20*np.log10(np.mean(np.sqrt(a_data**2))) + self.calibration
+            l_db = max_lvl + 20*np.log10(np.mean(np.sqrt(l_data**2))) + calibration
+            a_db = max_lvl + 20*np.log10(np.mean(np.sqrt(a_data**2))) + calibration
 
             self.l_dbs.append(l_db)
             self.a_dbs.append(a_db)
@@ -61,41 +78,48 @@ class SPL_Meter_Manager:
         else:
             print('no input')
 
-    # def save_csv(self, measurement_time, leq, laeq):
-    #     path = os.path.join(self.path,"SPL_"+str(measurement_time.date())+".csv")
-    #     f_object = open(path, 'a')
-    #     f_object.write("{},{:.2f},{:.2f}\n".format(
-    #                 measurement_time, leq,  laeq))
-    #     f_object.close()
 
     def measure_SPL(self, spl_queue, do_reset_queue):
-        CHANNEL = 1 #To NIE zmienia się w naszej konfiguracji. Jeśli zmienił się model mikrofonu i nie działa, to tutaj można szukać winnego
-        with sd.InputStream(device=self.sddevicenum, channels=self.sdchannel, callback=self.callback,
-                        blocksize=int(self.sampling_rate * self.timeweighting),
-                        samplerate=self.sampling_rate):
-            while True:
-                sleep(1)
-                if not do_reset_queue.empty():
-                    item = do_reset_queue.get_nowait()
-                    if item==True:
-                        print('Resetting average')
-                        self.l_dbs = []
-                        self.a_dbs = []
-                        do_reset_queue.task_done()
-            
-                lin_npy = np.array(self.l_dbs)
-                a_npy = np.array(self.a_dbs)
-                out_dict = {
-                    "lin_instant":20*np.log10(np.mean(10**(lin_npy[-int(1/self.timeweighting):]/20))),
-                    "lin_minute":20*np.log10(np.mean(10**(lin_npy[-int(60/self.timeweighting):]/20))),
-                    "lin_fifteen_mins":20*np.log10(np.mean(10**(lin_npy[-int(900/self.timeweighting):]/20))),
-                    "a_instant":20*np.log10(np.mean(10**(a_npy[-int(1/self.timeweighting):]/20))),
-                    "a_minute":20*np.log10(np.mean(10**(a_npy[-int(60/self.timeweighting):]/20))),
-                    "a_fifteen_mins":20*np.log10(np.mean(10**(a_npy[-int(900/self.timeweighting):]/20)))
-                }
-                spl_queue.put(out_dict)
-                # print(out_dict)
+        while True:
+            timeweighting = self.meas_config[self.TIMEWEIGHTING_NAME]
+            sample_rate = self.meas_config[self.SAMPLE_RATE_NAME]
+            sdchannel = self.sd_config[self.CHANNELS_NUM_NAME]
+            sddevicenum = self.sd_config[self.DEVICE_NUM_NAME]
+            print("settings")
+            print(timeweighting)
+            print(sdchannel)
+            print(sddevicenum)
+            print(sample_rate)
 
+            with sd.InputStream(device=sddevicenum, channels=sdchannel, callback=self.callback,
+                            blocksize=int(sample_rate * timeweighting),
+                            samplerate=sample_rate):
+                while True:
+                    sleep(1)
+                    if not do_reset_queue.empty():
+                        item = do_reset_queue.get_nowait()
+                        if item==True:
+                            print('Resetting average')
+                            self.l_dbs = []
+                            self.a_dbs = []
+                            do_reset_queue.task_done()
+                
+                    lin_npy = np.array(self.l_dbs)
+                    a_npy = np.array(self.a_dbs)
+                    out_dict = {
+                        "lin_instant":20*np.log10(np.mean(10**(lin_npy[-int(1/timeweighting):]/20))),
+                        "lin_minute":20*np.log10(np.mean(10**(lin_npy[-int(60/timeweighting):]/20))),
+                        "lin_fifteen_mins":20*np.log10(np.mean(10**(lin_npy[-int(900/timeweighting):]/20))),
+                        "a_instant":20*np.log10(np.mean(10**(a_npy[-int(1/timeweighting):]/20))),
+                        "a_minute":20*np.log10(np.mean(10**(a_npy[-int(60/timeweighting):]/20))),
+                        "a_fifteen_mins":20*np.log10(np.mean(10**(a_npy[-int(900/timeweighting):]/20)))
+                    }
+                    spl_queue.put(out_dict)
+                    
+                    # reload config if changed
+                    if self.update_config:
+                        self.update_config = False
+                        break
 
 
 if __name__=="__main__":
