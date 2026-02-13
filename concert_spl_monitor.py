@@ -1,5 +1,7 @@
 from SPL_meter import SPL_Meter_Manager
 from guizero import App, PushButton, Text, Box, TextBox
+from keyboard import NumericKeyboard
+
 import threading
 import math
 from queue import Queue, Empty
@@ -113,10 +115,8 @@ config_entries = {}
 
 def show_config():
     config = measurement_manager.get_meas_config()
-    print("meas_config")
-    print(config)
     for field in config_fields:
-        config_entries[field].value = str(config.get(field, "1"))
+        config_entries[field].value = str(config.get(field, ""))
 
     main_view.hide()
     config_view.show()
@@ -142,7 +142,6 @@ def save_config():
         else:
             new_config[field] = value
 
-    print(new_config)
     measurement_manager.set_meas_config(new_config)
     measConfig.save_config(new_config)
 
@@ -155,6 +154,7 @@ def save_config():
 app = App(title="Concert audio monitor", bg="#000000",  )
 main_view = Box(app, width="fill", height="fill")
 config_view = Box(app, width="fill", height="fill", visible=False)
+keyboard = NumericKeyboard(config_view)
 
 # main view 
 
@@ -185,17 +185,28 @@ a_button = PushButton(buttons_filters_box, command=set_a, text="A weighing", gri
 lin_button = PushButton(buttons_filters_box, command=set_lin, text="Z weighing", grid=[1,0], padx=30, pady=30)
 
 buttons_config_box = Box(main_view, layout="grid")
-config_button = PushButton(buttons_config_box, command=show_config, text="Config", grid=[0,1], padx=30, pady=30)
-AP_button = PushButton(buttons_config_box, command=show_config, text="GetFiles", grid=[0,2], padx=30, pady=30)
+
+config_button = PushButton(buttons_config_box, command=show_config, text="Configuration", grid=[0,0], padx=30, pady=30)
+config_button.text_color = "#ffffff"
+config_button.text_size = 20
+
+AP_button = PushButton(buttons_config_box, command=OpenAccespoint, text="GetFiles", grid=[1,0], padx=30, pady=30)
+AP_button.text_color = "#ffffff"
+AP_button.text_size = 20
 
 #  config view 
 config_box = Box(config_view, layout="grid", width="fill", height="fill")
 for i, field in enumerate(config_fields):
-    Text(config_box, text=field, color="white", grid=[0, i])
+    label = Text(config_box, text=field, color="white", grid=[0, i])
+    label.text_size = 20
 
     config_entries[field] = TextBox(config_box, width=20, grid=[1, i])
-    config_entries[field].bg = "#222222"
+    config_entries[field].bg = "#111111"
     config_entries[field].text_color = "#ffffff"
+    config_entries[field].text_size = 20
+
+    keyboard.attach(config_entries[field])
+
 
 cancel_button = PushButton(
     config_box,
@@ -221,8 +232,6 @@ cancel_button.text_size = 20
 
 
 
-config_button.text_color = "#ffffff"
-config_button.text_size = 20
 
 
 instant_button.text_color=color_active
