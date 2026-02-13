@@ -3,10 +3,10 @@ from guizero import App, PushButton, Text, Box
 import threading
 import math
 from queue import Queue, Empty
-from spl_log import SPLLogger, Logger
+from spl_log import CSVLogger, Logger
 
 
-meas_logger = SPLLogger(directory="measurements", prefix="spl")
+meas_logger = CSVLogger(directory="measurements", prefix="spl")
 debug = Logger(directory="debug", prefix="log")
 
 debug.log("Starting concert SPL monitor application")
@@ -69,12 +69,14 @@ def get_data(queue):
     except Empty:
         print("empty")
     else:
+        meas_logger.saveMeas(item)  
         value = item.get(value_to_get, 0)
+        debug.log(value)
         if math.isnan(value): value=0
         if weigh=="a" and (time=="fifteen_mins" or time=="minute") and value>=100: text.text_color=danger_color
         if value<100: text.text_color=color_active
         if value != 0: text.value=f"{value:.1f}"     
-        meas_logger.saveMeas(value)   
+
         queue.task_done()
 
 app = App(title="Concert audio monitor", bg="#000000",  )
