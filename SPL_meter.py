@@ -123,6 +123,11 @@ class SPL_Meter_Manager:
 
 
 if __name__=="__main__":
+    from config_mng import ConfigurationManager 
     print(sd.query_devices())
-    spl_met = SPL_Meter_Manager({})
+    
+    measConfig = ConfigurationManager("config/meas.json")
+    soundDeviceConfig = ConfigurationManager("config/sounddevice.json")
+    spl_met = SPL_Meter_Manager(measConfig.get_config(), soundDeviceConfig.get_config())
+
     spl_met.measure_SPL(Queue(), Queue())
