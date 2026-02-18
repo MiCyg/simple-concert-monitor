@@ -153,8 +153,6 @@ def save_config():
 
 app = App(title="Concert audio monitor", bg="#000000",  )
 main_view = Box(app, width="fill", height="fill")
-config_view = Box(app, width="fill", height="fill", visible=False)
-keyboard = NumericKeyboard(config_view)
 
 # main view 
 
@@ -194,13 +192,21 @@ AP_button = PushButton(buttons_config_box, command=OpenAccespoint, text="GetFile
 AP_button.text_color = "#ffffff"
 AP_button.text_size = 20
 
+
+config_view = Box(app, width="fill", height="fill", visible=False)
+config_settings_box = Box(config_view, grid=[0,0], width="fill")
+config_keyboard_box = Box(config_view, grid=[0,1], width="fill")
+
+keyboard = NumericKeyboard(config_keyboard_box)
 #  config view 
-config_box = Box(config_view, layout="grid", width="fill", height="fill")
+
 for i, field in enumerate(config_fields):
-    label = Text(config_box, text=field, color="white", grid=[0, i])
+    entry_box = Box(config_settings_box, height=80, layout="grid", grid=[0, i], width=500)
+
+    label = Text(entry_box, text=field, color="white", grid=[0, 0], width="fill", height="fill")
     label.text_size = 20
 
-    config_entries[field] = TextBox(config_box, width=20, grid=[1, i])
+    config_entries[field] = TextBox(entry_box,  grid=[0, 1], width="fill", height="fill", align="bottom")
     config_entries[field].bg = "#111111"
     config_entries[field].text_color = "#ffffff"
     config_entries[field].text_size = 20
@@ -209,7 +215,7 @@ for i, field in enumerate(config_fields):
 
 
 cancel_button = PushButton(
-    config_box,
+    config_settings_box,
     text="Cancel",
     command=lambda: (config_view.hide(), main_view.show()),
     grid=[0, len(config_fields)],
@@ -217,7 +223,7 @@ cancel_button = PushButton(
 )
 
 ok_button = PushButton(
-    config_box,
+    config_settings_box,
     text="OK",
     command=save_config,
     grid=[1, len(config_fields)],
