@@ -280,7 +280,7 @@ password_entry.text_size = 20
 ok_exit_button = PushButton(pin_view, text="OK", command=close_pin_view, width=10, padx=20, pady=20)
 ok_exit_button.text_color = "#ffffff"
 ok_exit_button.text_size = 20
-exit_keyboard = NumericKeyboard(pin_view)
+exit_keyboard = NumericKeyboard(pin_view, additional_commands=False)
 exit_keyboard.set_active(password_entry)
 exit_keyboard.show()
 

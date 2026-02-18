@@ -1,10 +1,11 @@
 from guizero import Box, PushButton
 
 class NumericKeyboard:
-    def __init__(self, parent, bg="#000000"):
+    def __init__(self, parent, bg="#000000", additional_commands=True):
         self.parent = parent
         self.bg = bg
         self.active_entry = None
+        self.additional_commands = additional_commands
 
         # Kontener klawiatury w parent, layout auto
         self.container = Box(
@@ -30,14 +31,17 @@ class NumericKeyboard:
 
     def _build_keys(self):
         keys = [
-            ["7", "8", "9"],
-            ["4", "5", "6"],
             ["1", "2", "3"],
+            ["4", "5", "6"],
+            ["7", "8", "9"],
             ["0", ".", "←"]
         ]
 
-        total_rows = len(keys) + 1  # +1 dla Clear/Close
+            
         total_cols = len(keys[0])
+        total_rows = len(keys)
+        if self.additional_commands:
+            total_rows += 1  # +1 dla Clear/Close
 
         # Tworzenie przycisków numerycznych
         for r, row_keys in enumerate(keys):
@@ -49,34 +53,37 @@ class NumericKeyboard:
                     grid=[c, r],
                     width="fill",
                     height="fill",
+                    padx=20,
+                    pady=5
                 )
                 btn.bg = "#111111"
                 btn.text_color = "#ffffff"
                 btn.text_size = 22
 
-        # Ostatni rząd: Clear i Close w lewo/prawo oraz pusty środkowy przycisk
-        clear_btn = PushButton(
-            self.inner_box,
-            text="Clear",
-            command=self.clear_entry,
-            grid=[0, total_rows - 1],
-            width="fill",
-            height="fill"
-        )
-        dummy_btn = Box(self.inner_box, grid=[1, total_rows - 1], width="fill", height="fill")  # pusty środek
-        close_btn = PushButton(
-            self.inner_box,
-            text="Close",
-            command=self.hide,
-            grid=[2, total_rows - 1],
-            width="fill",
-            height="fill"
-        )
+        if self.additional_commands:
+            # Ostatni rząd: Clear i Close w lewo/prawo oraz pusty środkowy przycisk
+            clear_btn = PushButton(
+                self.inner_box,
+                text="Clear",
+                command=self.clear_entry,
+                grid=[0, total_rows - 1],
+                width="fill",
+                height="fill"
+            )
+            dummy_btn = Box(self.inner_box, grid=[1, total_rows - 1], width="fill", height="fill")  # pusty środek
+            close_btn = PushButton(
+                self.inner_box,
+                text="Close",
+                command=self.hide,
+                grid=[2, total_rows - 1],
+                width="fill",
+                height="fill"
+            )
 
-        for btn in [clear_btn, close_btn]:
-            btn.bg = "#555555"
-            btn.text_color = "#ffffff"
-            btn.text_size = 18
+            for btn in [clear_btn, close_btn]:
+                btn.bg = "#555555"
+                btn.text_color = "#ffffff"
+                btn.text_size = 18
 
         # Rozciąganie wszystkich wierszy i kolumn równomiernie
         for r in range(total_rows):
