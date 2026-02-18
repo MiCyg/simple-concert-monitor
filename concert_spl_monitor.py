@@ -1,5 +1,5 @@
 from SPL_meter import SPL_Meter_Manager
-from guizero import App, PushButton, Text, Box, TextBox
+from guizero import App, PushButton, Text, Box, TextBox, Window
 from keyboard import NumericKeyboard
 
 import threading
@@ -28,8 +28,12 @@ default_sdConfig = {
     "device": 1,
     "channels": 1
 }
+default_pinConfig = {
+    "pin": "2137"
+}
 measConfig = ConfigurationManager("config/meas.json", default_measConfig)
 soundDeviceConfig = ConfigurationManager("config/sounddevice.json", default_sdConfig)
+pinConfig = ConfigurationManager("config/pass.json", default_pinConfig)
 measurement_manager = SPL_Meter_Manager(measConfig.get_config(), soundDeviceConfig.get_config())
 
 
@@ -98,16 +102,31 @@ def get_data(queue):
         queue.task_done()
 
 
-    
-def OpenAccespoint():
-    # TODO create accespoint which automatically off after x minutes
+def open_pin_view():
+    main_view.hide()
+    pin_view.show()
+    password_entry.value = ""
+    debug.log("aaa")
+
+def close_pin_view():
+    main_view.show()
+    pin_view.hide()
+    debug.log("dddd")
+    debug.log(pinConfig.get_config())
+
+
+    if password_entry.value == pinConfig.get_config()["pin"]:
+        debug.log("Correct password, exiting application")
+        app.exit_full_screen()
+    else:
+        debug.log("entered password", password_entry.value, "expected", pinConfig.get_config()["pin"])
+
     pass
 
 config_fields = [
     "calibration_level",
     "calibration_correction_value",
     "sensitivity_dbfs",
-    "sample_rate",
     "timeweighting",
 ]
 
@@ -122,7 +141,7 @@ def show_config():
     config_view.show()
 
 def save_config():
-    new_config = {}
+    new_config = measurement_manager.get_meas_config()
 
     for field in config_fields:
         value = config_entries[field].value
@@ -151,10 +170,10 @@ def save_config():
 
 
 
-app = App(title="Concert audio monitor", bg="#000000",  )
-main_view = Box(app, width="fill", height="fill")
+app = App(title="Concert audio monitor", bg="#000000")
 
 # main view 
+main_view = Box(app, width="fill", height="fill")
 
 level_indic_box = Box(main_view, align="top", width="fill")
 
@@ -188,17 +207,35 @@ config_button = PushButton(buttons_config_box, command=show_config, text="Config
 config_button.text_color = "#ffffff"
 config_button.text_size = 20
 
-AP_button = PushButton(buttons_config_box, command=OpenAccespoint, text="GetFiles", grid=[1,0], padx=30, pady=30)
-AP_button.text_color = "#ffffff"
-AP_button.text_size = 20
+exit_button = PushButton(buttons_config_box, command=open_pin_view, text="Exit", grid=[1,0], padx=30, pady=30)
+exit_button.text_color = "#ffffff"
+exit_button.text_size = 20
 
+instant_button.text_color=color_active
+instant_button.text_size=20
 
+one_button.text_color="#ffffff"
+one_button.text_size=20
+
+fifteen_button.text_color="#ffffff"
+fifteen_button.text_size=20
+
+reset_button.text_color="#ffffff"
+reset_button.text_size=20
+
+a_button.text_color=color_active_weighing
+a_button.text_size=20
+
+lin_button.text_color="#ffffff"
+lin_button.text_size=20
+
+#  config view 
 config_view = Box(app, width="fill", height="fill", visible=False)
 config_settings_box = Box(config_view, grid=[0,0], width="fill")
 config_keyboard_box = Box(config_view, grid=[0,1], width="fill")
-
 keyboard = NumericKeyboard(config_keyboard_box)
-#  config view 
+keyboard.show()
+
 
 for i, field in enumerate(config_fields):
     entry_box = Box(config_settings_box, height=80, layout="grid", grid=[0, i], width=500)
@@ -237,26 +274,19 @@ cancel_button.text_color = "#ffffff"
 cancel_button.text_size = 20
 
 
-
-
-
-instant_button.text_color=color_active
-instant_button.text_size=20
-
-one_button.text_color="#ffffff"
-one_button.text_size=20
-
-fifteen_button.text_color="#ffffff"
-fifteen_button.text_size=20
-
-reset_button.text_color="#ffffff"
-reset_button.text_size=20
-
-a_button.text_color=color_active_weighing
-a_button.text_size=20
-
-lin_button.text_color="#ffffff"
-lin_button.text_size=20
+# pin view
+pin_view = Box(app, width="fill", height="fill", visible=False)
+Text(pin_view, text="Write secret pin", color="#ffffff", size=20, align="top")
+password_entry = TextBox(pin_view, align="top", hide_text=True, height=80, width=300)
+password_entry.bg = "#111111"
+password_entry.text_color = "#ffffff"
+password_entry.text_size = 20
+ok_exit_button = PushButton(pin_view, text="OK", command=close_pin_view, width=10, padx=20, pady=20)
+ok_exit_button.text_color = "#ffffff"
+ok_exit_button.text_size = 20
+exit_keyboard = NumericKeyboard(pin_view)
+exit_keyboard.set_active(password_entry)
+exit_keyboard.show()
 
 debug.log("Set up complete, displaying app")
 app.set_full_screen()

@@ -64,6 +64,18 @@ pip install -r requirements.txt
 python concert_spl_monitor.py
 ```
 
+## Default PIN
+
+After the first run, the application creates a `config` directory containing three configuration files:
+- `meas.json`
+- `pass.json`
+- `sounddevice.json`
+The default PIN is defined in `pass.json`. 
+You can change the PIN after the first run by editing the `pin` property inside the `pass.json` file.
+
+
+
+
 ## Autostart on Boot (GUI – systemd user service)
 
 For GUI applications on Raspberry Pi, use a **user-level systemd service** instead of a system-wide service.
@@ -143,4 +155,3 @@ journalctl --user -u concert-spl-monitor.service -f
 * Do not use `sudo` with `systemctl --user`
 * Do not use `DISPLAY` or `XAUTHORITY` in user services
 * This method is recommended for GUI applications on Raspberry Pi OS
-
