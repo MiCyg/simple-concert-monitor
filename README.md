@@ -64,65 +64,83 @@ pip install -r requirements.txt
 python concert_spl_monitor.py
 ```
 
-## Autostart on Boot (systemd)
+## Autostart on Boot (GUI – systemd user service)
 
-Create a systemd service so the application starts automatically after boot.
+For GUI applications on Raspberry Pi, use a **user-level systemd service** instead of a system-wide service.
 
-### 1. Create service file
+### 1. Create user systemd directory
 
 ```bash
-sudo nano /etc/systemd/system/concert-spl-monitor.service
+mkdir -p ~/.config/systemd/user
 ```
 
-### 2. Add configuration
+---
 
-Adjust paths to match your project location.
+### 2. Create service file
+
+```bash
+nano ~/.config/systemd/user/concert-spl-monitor.service
+```
+
+Insert:
 
 ```ini
 [Unit]
 Description=Concert SPL Monitor
-After=network.target
+After=graphical-session.target
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/concert-spl-monitor
-ExecStart=/home/pi/concert-spl-monitor/.venv/bin/python /home/pi/concert-spl-monitor/concert_spl_monitor.py
+WorkingDirectory=/home/USERNAME/Documents/simple-concert-monitor
+ExecStart=/home/USERNAME/Documents/simple-concert-monitor/.venv/bin/python /home/USERNAME/Documents/simple-concert-monitor/concert_spl_monitor.py
 Restart=always
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 ```
 
-If your username is different than `pi`, replace it accordingly.
+Replace `USERNAME` with your actual username.
 
-### 3. Reload systemd
+---
+
+### 3. Enable lingering (required)
+
+This allows the user service to start at boot:
 
 ```bash
-sudo systemctl daemon-reload
+sudo loginctl enable-linger USERNAME
 ```
 
-### 4. Enable autostart
+---
+
+### 4. Enable and start the service
 
 ```bash
-sudo systemctl enable concert-spl-monitor.service
+systemctl --user daemon-reload
+systemctl --user enable concert-spl-monitor.service
+systemctl --user start concert-spl-monitor.service
 ```
 
-### 5. Start service manually (optional)
+---
+
+### 5. Check status
 
 ```bash
-sudo systemctl start concert-spl-monitor.service
+systemctl --user status concert-spl-monitor.service
 ```
 
-### 6. Check status
+---
+
+### 6. View logs
 
 ```bash
-sudo systemctl status concert-spl-monitor.service
+journalctl --user -u concert-spl-monitor.service -f
 ```
 
-### 7. View logs
+---
 
-```bash
-journalctl -u concert-spl-monitor.service -f
-```
+## Notes
 
+* Do not use `sudo` with `systemctl --user`
+* Do not use `DISPLAY` or `XAUTHORITY` in user services
+* This method is recommended for GUI applications on Raspberry Pi OS
 
