@@ -2,6 +2,9 @@
 
 Python-based SPL monitoring tool for Raspberry Pi.
 
+![main_view](images/main_view.png)
+
+
 ## Prerequisites
 
 - Raspberry Pi OS
