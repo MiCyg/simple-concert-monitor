@@ -8,8 +8,9 @@
 
 Python-based SPL monitoring software for Raspberry Pi.
 
-![main_view](images/main_view.png)
-
+<p align="center">
+	<img src="images/main_view.png" width="50%" />
+</p>
 
 ## Prerequisites
 
