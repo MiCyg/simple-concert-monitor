@@ -63,3 +63,66 @@ pip install -r requirements.txt
 ```bash
 python concert_spl_monitor.py
 ```
+
+## Autostart on Boot (systemd)
+
+Create a systemd service so the application starts automatically after boot.
+
+### 1. Create service file
+
+```bash
+sudo nano /etc/systemd/system/concert-spl-monitor.service
+```
+
+### 2. Add configuration
+
+Adjust paths to match your project location.
+
+```ini
+[Unit]
+Description=Concert SPL Monitor
+After=network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/concert-spl-monitor
+ExecStart=/home/pi/concert-spl-monitor/.venv/bin/python /home/pi/concert-spl-monitor/concert_spl_monitor.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+If your username is different than `pi`, replace it accordingly.
+
+### 3. Reload systemd
+
+```bash
+sudo systemctl daemon-reload
+```
+
+### 4. Enable autostart
+
+```bash
+sudo systemctl enable concert-spl-monitor.service
+```
+
+### 5. Start service manually (optional)
+
+```bash
+sudo systemctl start concert-spl-monitor.service
+```
+
+### 6. Check status
+
+```bash
+sudo systemctl status concert-spl-monitor.service
+```
+
+### 7. View logs
+
+```bash
+journalctl -u concert-spl-monitor.service -f
+```
+
+
