@@ -1,6 +1,12 @@
 # Concert SPL Monitor
 
-Python-based SPL monitoring tool for Raspberry Pi.
+![Status](https://img.shields.io/badge/status-in%20development-orange)
+
+[← go to mechanical page](https://github.com/MiCyg/simple-concert-monitor_Mechanical)
+
+---
+
+Python-based SPL monitoring software for Raspberry Pi.
 
 ![main_view](images/main_view.png)
 
