@@ -101,8 +101,13 @@ def get_data(queue):
 
         queue.task_done()
 
+def minimalise_app():
+    app.exit_full_screen()
 
-def open_pin_view():
+fuinction_after_pin = None
+def open_pin_view(function_after=None):
+    global fuinction_after_pin
+    fuinction_after_pin = function_after
     main_view.hide()
     pin_view.show()
     password_entry.value = ""
@@ -116,12 +121,9 @@ def close_pin_view():
 
 
     if password_entry.value == pinConfig.get_config()["pin"]:
-        debug.log("Correct password, exiting application")
-        app.exit_full_screen()
-    else:
-        debug.log("entered password", password_entry.value, "expected", pinConfig.get_config()["pin"])
-
-    pass
+        debug.log("Correct password")
+        if fuinction_after_pin:
+            fuinction_after_pin()
 
 config_fields = [
     "calibration_level",
@@ -151,12 +153,6 @@ def save_config():
                 new_config[field] = float(value)
             except:
                 new_config[field] = 0.0
-
-        elif field == "sample_rate":
-            try:
-                new_config[field] = int(value)
-            except:
-                new_config[field] = 48000
 
         else:
             new_config[field] = value
@@ -203,11 +199,11 @@ lin_button = PushButton(buttons_filters_box, command=set_lin, text="Z weighing",
 
 buttons_config_box = Box(main_view, layout="grid")
 
-config_button = PushButton(buttons_config_box, command=show_config, text="Configuration", grid=[0,0], padx=30, pady=30)
+config_button = PushButton(buttons_config_box, command=open_pin_view, args=[show_config], text="Configuration", grid=[0,0], padx=30, pady=30)
 config_button.text_color = "#ffffff"
 config_button.text_size = 20
 
-exit_button = PushButton(buttons_config_box, command=open_pin_view, text="Exit", grid=[1,0], padx=30, pady=30)
+exit_button = PushButton(buttons_config_box, command=open_pin_view, args=[minimalise_app], text="Exit", grid=[1,0], padx=30, pady=30)
 exit_button.text_color = "#ffffff"
 exit_button.text_size = 20
 
